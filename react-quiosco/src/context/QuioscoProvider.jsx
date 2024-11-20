@@ -1,34 +1,38 @@
-import { Children, createContext,useState, useEffect } from "react";
+import { createContext, useState, useEffect } from 'react'
+import { toast } from 'react-toastify';
+import clienteAxios from '../config/axios';
 
-import { toast } from "react-toastify";
-import clienteAxios from "../config/axios";
-const QuioscoContext=createContext();
+const QuioscoContext = createContext();
 
-const QuioscoProvider = ({children})=> {
-    const [categorias, setCategorias]= useState([]);
-    const [categoriaActual,setCategoriaActual]=useState({})
-    const [modal,setModal]=useState(false)
-    const [producto,setProducto]=useState({})
-    const [pedido,setPedido] = useState([])
-    const [total,setTotal] = useState([0])
+const QuioscoProvider = ({children}) => {
 
+    const [categorias, setCategorias ] = useState([]);
+    const [categoriaActual, setCategoriaActual] = useState({})
+    const [modal, setModal] = useState(false)
+    const [producto, setProducto] = useState({})
+    const [pedido, setPedido] = useState([])
+    const [total, setTotal] = useState(0)
 
-    useEffect(()=>{
-        const nuevoTotal =pedido.reduce((total,producto)=>(producto.precio*producto.cantidad)+total,0)
-        setTotal(nuevoTotal)
-    },[pedido])
+    useEffect(() => {
+        const nuevoTotal = pedido.reduce( (total, producto) => (producto.precio * producto.cantidad) + total, 0 )
+        setTotal(nuevoTotal) 
+    }, [pedido])
 
     const obtenerCategorias = async () => {
+        const token = localStorage.getItem('AUTH_TOKEN')
         try {
-            const {data}= await clienteAxios('/api/categorias')
+            const {data} = await clienteAxios('/api/categorias', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
             setCategorias(data.data)
             setCategoriaActual(data.data[0])
         } catch (error) {
-            console.log(error);
-            alert('Error al obtener categorías');
-            
+            console.log(error)
         }
     }
+
     useEffect(() => {
         obtenerCategorias();
     }, [])
@@ -37,35 +41,100 @@ const QuioscoProvider = ({children})=> {
         const categoria = categorias.filter(categoria => categoria.id === id)[0]
         setCategoriaActual(categoria)
     }
-    const handleClickModal =()=>{
+
+    const handleClickModal = () => {
         setModal(!modal)
     }
+
     const handleSetProducto = producto => {
         setProducto(producto)
     }
-    const handleAgregarPedido = ({categoria_id,...producto}) => {
-      
-        if(pedido.some(pedidoState => pedidoState.id=== producto.id)){
-            const pedidoActualizado = pedido.map(pedidoState=> pedidoState.id === producto.id ? producto:pedidoState)
+
+    const handleAgregarPedido = ({categoria_id, ...producto}) => {
+        if(pedido.some( pedidoState => pedidoState.id === producto.id )) {
+            const pedidoActualizado = pedido.map( pedidoState => pedidoState.id === producto.id ? producto : pedidoState)
             setPedido(pedidoActualizado)
             toast.success('Guardado Correctamente')
-            
-    } else{
-        setPedido([...pedido,producto])
-        toast.success('Agregado el Pedido')
+        } else {
+            setPedido([...pedido, producto])
+            toast.success('Agregado al Pedido')
+        }
     }
-    }
-    const handleEditarCantidad = id=>{
+
+    const handleEditarCantidad = id => {
         const productoActualizar = pedido.filter(producto => producto.id === id)[0]
         setProducto(productoActualizar)
-        setModal(!modal);
+        setModal(!modal)
     }
-    const handleEliminarProductoPedido = id =>{
-        const pedidoActualizado =  pedido.filter(producto => producto.id !== id)
+
+    const handleEliminarProductoPedido = id => {
+        const pedidoActualizado = pedido.filter(producto => producto.id !== id )
         setPedido(pedidoActualizado)
-       toast.success('elimando del pedido')
+        toast.success('Eliminado del Pedido')
     }
-    return(
+
+    const handleSubmitNuevaOrden = async (logout) => {
+        const token = localStorage.getItem('AUTH_TOKEN')
+        try {
+            const {data} = await clienteAxios.post('/api/pedidos', 
+            {
+                total,
+                productos: pedido.map(producto => {
+                    return {
+                        id: producto.id,
+                        cantidad: producto.cantidad
+                    }
+                })
+            }, 
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            toast.success(data.message);
+            setTimeout(() => {
+                setPedido([])
+            }, 1000);
+
+            // Cerrar la sesión del usuario
+            setTimeout(() => {
+                localStorage.removeItem('AUTH_TOKEN');
+                logout();
+            }, 3000);
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const handleClickCompletarPedido = async id => {
+        const token = localStorage.getItem('AUTH_TOKEN')
+        try {
+            await clienteAxios.put(`/api/pedidos/${id}`, null, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const handleClickProductoAgotado = async id => {
+        const token = localStorage.getItem('AUTH_TOKEN')
+        try {
+            await clienteAxios.put(`/api/productos/${id}`, null, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+
+    return (
         <QuioscoContext.Provider
             value={{
                 categorias,
@@ -79,13 +148,16 @@ const QuioscoProvider = ({children})=> {
                 handleAgregarPedido,
                 handleEditarCantidad,
                 handleEliminarProductoPedido,
-                total
+                total,
+                handleSubmitNuevaOrden,
+                handleClickCompletarPedido,
+                handleClickProductoAgotado
             }}
-            >{children}</QuioscoContext.Provider>
+        >{children}</QuioscoContext.Provider>
     )
 }
 
-export{
+export {
     QuioscoProvider
 }
 export default QuioscoContext
