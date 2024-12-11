@@ -37,3 +37,4 @@ export default function Productos() {
     </div>
   )
 }
+    

@@ -7,6 +7,7 @@ import Login from './views/Login'
 import Ordenes from './views/Ordenes'
 import Productos from './views/Productos'
 import Registro from './views/Registro'
+import Pedidos from './views/Pedidos'
 
 const router = createBrowserRouter([
     {
@@ -16,6 +17,10 @@ const router = createBrowserRouter([
             {
                 index: true,
                 element: <Inicio />
+            },
+            {
+                path: '/pedidos', 
+                element: <Pedidos />
             }
         ]
     },

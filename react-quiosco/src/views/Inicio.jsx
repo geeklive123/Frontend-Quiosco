@@ -7,7 +7,7 @@ export default function Inicio() {
 
   const { categoriaActual } = useQuisco()
 
-  // Consulta SWR
+
   const token = localStorage.getItem('AUTH_TOKEN');
   const fetcher = () => clienteAxios('/api/productos', {
     headers: {

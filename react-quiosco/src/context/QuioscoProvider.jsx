@@ -76,7 +76,7 @@ const QuioscoProvider = ({children}) => {
     const handleSubmitNuevaOrden = async (logout) => {
         const token = localStorage.getItem('AUTH_TOKEN')
         try {
-            const {data} = await clienteAxios.post('/api/pedidos', 
+            const { data } = await clienteAxios.post('/api/pedidos', 
             {
                 total,
                 productos: pedido.map(producto => {
@@ -91,21 +91,45 @@ const QuioscoProvider = ({children}) => {
                     Authorization: `Bearer ${token}`
                 }
             })
-
+    
             toast.success(data.message);
+    
+          
             setTimeout(() => {
                 setPedido([])
             }, 1000);
-
-            // Cerrar la sesión del usuario
-            setTimeout(() => {
-                localStorage.removeItem('AUTH_TOKEN');
-                logout();
-            }, 3000);
+    
+            
+    
         } catch (error) {
             console.log(error)
         }
     }
+
+
+    const handleCancelarPedido = async (id) => {
+        const token = localStorage.getItem('AUTH_TOKEN');
+        try {
+            const { data } = await clienteAxios.delete(`/api/pedidos/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+    
+            toast.success(data.message);
+    
+         
+            const pedidoActualizado = pedido.filter(p => p.id !== id); 
+            setPedido(pedidoActualizado); 
+    
+           
+            mutate(); 
+        } catch (error) {
+            console.error('Error al cancelar el pedido:', error);
+            toast.error('Hubo un error al cancelar el pedido');
+        }
+    };
+    
 
     const handleClickCompletarPedido = async id => {
         const token = localStorage.getItem('AUTH_TOKEN')
@@ -115,6 +139,12 @@ const QuioscoProvider = ({children}) => {
                     Authorization: `Bearer ${token}`
                 }
             })
+    
+         
+            const updatedPedidos = pedido.filter(pedidoState => pedidoState.id !== id)
+            setPedido(updatedPedidos)
+    
+            toast.success('Pedido completado con éxito')
         } catch (error) {
             console.log(error)
         }
@@ -150,6 +180,7 @@ const QuioscoProvider = ({children}) => {
                 handleEliminarProductoPedido,
                 total,
                 handleSubmitNuevaOrden,
+                handleCancelarPedido,
                 handleClickCompletarPedido,
                 handleClickProductoAgotado
             }}

@@ -8,11 +8,7 @@ export default function AdminSidebar() {
     return (
         <aside className="md:w-72 h-screen">
             <div className="p-4">
-                <img 
-                    src="/img/logo.svg"
-                    alt="imagen logotipo"
-                    className="w-40"
-                />
+               
             </div>
 
             <nav className='flex flex-col p-4'>
